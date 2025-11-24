@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // TEMPORARY: Very permissive rules for testing
+    // TODO: Restrict these after confirming sign-up works
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Users collection - TEMPORARILY PERMISSIVE FOR TESTING
+    match /users/{userId} {
+      // Allow reading for email checks
+      allow read: if true;
+      // Allow creating if authenticated - simplified check
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      // Allow updating own profile
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      // Only admins can delete
+      allow delete: if false; // Disable deletion for now
+    }
+    
+    // Hosts collection - TEMPORARILY PERMISSIVE FOR TESTING
+    match /hosts/{hostId} {
+      // Allow reading for email checks
+      allow read: if true;
+      // Allow creating if authenticated
+      allow create: if isAuthenticated() && hostId == request.auth.uid;
+      // Allow updating own host profile
+      allow update: if isAuthenticated() && hostId == request.auth.uid;
+      // Only admins can delete
+      allow delete: if false; // Disable deletion for now
+    }
+    
+    // Default deny for everything else (for now)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

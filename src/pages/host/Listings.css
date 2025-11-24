@@ -1,0 +1,227 @@
+/* Listings Management Page Styles */
+
+.listings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.listings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.listings-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.listings-header p {
+  color: #6B7280;
+  margin: 0;
+}
+
+.listings-filters {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.625rem 1.25rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #6B7280;
+  background-color: #F9FAFB;
+  border: 2px solid #E5E7EB;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease-in-out;
+}
+
+.filter-btn:hover {
+  background-color: #F3F4F6;
+  border-color: #D1D5DB;
+}
+
+.filter-btn.active {
+  color: #6366F1;
+  background-color: #EEF2FF;
+  border-color: #6366F1;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-content h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.75rem 0;
+}
+
+.empty-content p {
+  color: #6B7280;
+  margin: 0 0 2rem 0;
+}
+
+.listings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.listing-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.listing-image {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background-color: #F3F4F6;
+}
+
+.listing-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.no-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9CA3AF;
+  font-size: 0.875rem;
+}
+
+.listing-status-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+.status {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status.published {
+  background-color: #10B981;
+  color: #FFFFFF;
+}
+
+.status.draft {
+  background-color: #F59E0B;
+  color: #FFFFFF;
+}
+
+.status.archived {
+  background-color: #6B7280;
+  color: #FFFFFF;
+}
+
+.listing-content {
+  padding: 1.5rem;
+}
+
+.listing-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.listing-location {
+  color: #6B7280;
+  font-size: 0.875rem;
+  margin: 0 0 1rem 0;
+}
+
+.listing-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+}
+
+.listing-price {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.listing-price small {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: #6B7280;
+}
+
+.listing-category {
+  padding: 0.25rem 0.75rem;
+  background-color: #F3F4F6;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6B7280;
+  text-transform: capitalize;
+}
+
+.listing-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #E5E7EB;
+  background-color: #F9FAFB;
+  flex-wrap: wrap;
+}
+
+.listing-actions button,
+.listing-actions a {
+  flex: 1;
+  min-width: 80px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .listings-header {
+    flex-direction: column;
+  }
+
+  .listings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .listing-actions {
+    flex-direction: column;
+  }
+
+  .listing-actions button,
+  .listing-actions a {
+    width: 100%;
+  }
+}
+
+
+
+
+

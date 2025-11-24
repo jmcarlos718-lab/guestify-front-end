@@ -1,0 +1,197 @@
+/* Best Offers Page Styles */
+
+.best-offers-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.best-offers-main {
+  flex: 1;
+  padding: 4rem 2rem;
+  background: #F9FAFB;
+}
+
+.best-offers-container {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.offers-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.offers-header h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 1rem 0;
+}
+
+.offers-header p {
+  font-size: 1.125rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+.offers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.offer-card {
+  padding: 0;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.offer-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.offer-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.offer-image {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  overflow: hidden;
+}
+
+.offer-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.offer-card:hover .offer-image img {
+  transform: scale(1.05);
+}
+
+.discount-badge-large {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: #EF4444;
+  color: #FFFFFF;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.offer-info {
+  padding: 1.5rem;
+}
+
+.offer-info h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.offer-location {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin: 0 0 0.75rem 0;
+}
+
+.offer-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.rating-stars {
+  color: #F59E0B;
+}
+
+.rating-count {
+  color: #6B7280;
+}
+
+.offer-price {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.original-price {
+  font-size: 0.875rem;
+  color: #9CA3AF;
+  text-decoration: line-through;
+}
+
+.current-price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #10B981;
+}
+
+.price-period {
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+
+.empty-offers {
+  text-align: center;
+  padding: 4rem 2rem;
+}
+
+.empty-content h3 {
+  font-size: 1.5rem;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.empty-content p {
+  font-size: 1rem;
+  color: #6B7280;
+  margin: 0 0 2rem 0;
+}
+
+.browse-btn {
+  background: #6366F1;
+  color: #FFFFFF;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.browse-btn:hover {
+  background: #4F46E5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .best-offers-main {
+    padding: 2rem 1rem;
+  }
+
+  .offers-header h1 {
+    font-size: 2rem;
+  }
+
+  .offers-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}

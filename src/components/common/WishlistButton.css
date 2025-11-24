@@ -1,0 +1,44 @@
+/* Wishlist Button Styles */
+
+.wishlist-button {
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 2;
+  color: #6B7280;
+}
+
+.wishlist-button:hover {
+  background: #FFFFFF;
+  transform: scale(1.1);
+  color: #EF4444;
+}
+
+.wishlist-button.active {
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.wishlist-button.wishlist-button--detail {
+  width: 48px;
+  height: 48px;
+  font-size: 1.5rem;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.08);
+}
+
+.wishlist-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+
+

@@ -1,0 +1,93 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is owner
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // User profile images
+    match /users/{userId}/profile/{allPaths=**} {
+      // Anyone authenticated can read profile images
+      allow read: if isAuthenticated();
+      // Only user can upload/update their own profile image
+      allow write: if isOwner(userId) && 
+        request.resource.size < 5 * 1024 * 1024 && // 5MB limit
+        request.resource.contentType.matches('image/.*');
+    }
+    
+    // Listing images (stored under the host/owner UID)
+    match /listings/{ownerId}/images/{allPaths=**} {
+      // Anyone authenticated can read listing images
+      allow read: if isAuthenticated();
+      // Only the owner of the folder can upload/update listing images
+      allow write: if isOwner(ownerId) &&
+        request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+        request.resource.contentType.matches('image/.*');
+    }
+    
+    // Listing documents (PDFs, etc.)
+    match /listings/{listingId}/documents/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && 
+        request.resource.size < 5 * 1024 * 1024 && // 5MB limit
+        request.resource.contentType.matches('application/pdf');
+    }
+    
+    // Booking documents
+    match /bookings/{bookingId}/documents/{allPaths=**} {
+      // Users can read documents for their bookings
+      allow read: if isAuthenticated();
+      // Users can upload documents for their bookings
+      allow write: if isAuthenticated() && 
+        request.resource.size < 5 * 1024 * 1024;
+    }
+    
+    // General user uploads
+    match /uploads/{userId}/{allPaths=**} {
+      // Users can read their own uploads
+      allow read: if isOwner(userId);
+      // Users can upload to their own folder
+      allow write: if isOwner(userId) && 
+        request.resource.size < 10 * 1024 * 1024; // 10MB limit
+    }
+    
+    // Admin uploads
+    match /admin/{allPaths=**} {
+      // Only admins can access admin folder
+      allow read, write: if isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Public assets (logos, banners, etc.)
+    match /public/{allPaths=**} {
+      // Anyone can read public assets
+      allow read: if true;
+      // Only admins can write to public folder
+      allow write: if isAuthenticated() && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,414 @@
+/* View Listing Page Styles */
+
+.view-listing-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.view-listing-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.view-listing-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.listing-location {
+  color: #6B7280;
+  font-size: 1rem;
+  margin: 0 0 0.75rem 0;
+}
+
+.listing-status-badge {
+  margin-top: 0.5rem;
+}
+
+.listing-status-badge .status {
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.listing-status-badge .status.published {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.listing-status-badge .status.draft {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.listing-status-badge .status.archived {
+  background: #E5E7EB;
+  color: #374151;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.images-section {
+  padding: 1.5rem;
+}
+
+.images-section h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.listing-images {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.main-image {
+  width: 100%;
+  height: 500px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background-color: #F3F4F6;
+}
+
+.main-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-thumbnails {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+}
+
+.thumbnail {
+  width: 100px;
+  height: 100px;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 3px solid transparent;
+  cursor: pointer;
+  background: none;
+  padding: 0;
+  transition: all 0.3s ease-in-out;
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnail:hover {
+  border-color: #D1D5DB;
+}
+
+.thumbnail.active {
+  border-color: #6366F1;
+}
+
+.view-listing-content {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 2rem;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.section-card {
+  padding: 1.5rem;
+}
+
+.section-card h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.detail-item {
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.detail-item strong {
+  color: #111827;
+  margin-right: 0.5rem;
+}
+
+.location-details p {
+  margin: 0.5rem 0;
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.location-details strong {
+  color: #111827;
+  margin-right: 0.5rem;
+}
+
+.amenities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.amenity-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.amenity-item span {
+  color: #10B981;
+  font-weight: bold;
+}
+
+.house-rules-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.house-rules-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #E5E7EB;
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.house-rules-list li:last-child {
+  border-bottom: none;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.bookings-card,
+.stats-card {
+  padding: 1.5rem;
+}
+
+.bookings-card h2,
+.stats-card h2 {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.booking-item {
+  padding: 1rem;
+  background: #F9FAFB;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
+}
+
+.booking-info {
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.booking-info strong {
+  color: #111827;
+  margin-right: 0.5rem;
+}
+
+.booking-info .status {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.booking-info .status.confirmed {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.booking-info .status.pending {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stat-item {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #E5E7EB;
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.stat-item:last-child {
+  border-bottom: none;
+}
+
+.stat-item strong {
+  color: #111827;
+  margin-right: 0.5rem;
+}
+
+.booking-actions {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #E5E7EB;
+}
+
+.cancel-booking-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cancel-booking-modal p {
+  margin: 0;
+  color: #374151;
+}
+
+.booking-summary {
+  padding: 1rem;
+  background: #F9FAFB;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
+}
+
+.booking-summary p {
+  margin: 0.5rem 0;
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.booking-summary strong {
+  color: #111827;
+  margin-right: 0.5rem;
+}
+
+.guest-info-section {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #E5E7EB;
+}
+
+.guest-details {
+  margin-top: 0.5rem;
+  padding-left: 1rem;
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+
+.guest-details div {
+  margin: 0.25rem 0;
+}
+
+.guest-info-summary {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #E5E7EB;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #111827;
+  background-color: #FFFFFF;
+  border: 2px solid #E5E7EB;
+  border-radius: 0.5rem;
+  outline: none;
+  transition: all 0.3s ease-in-out;
+  resize: vertical;
+}
+
+.form-textarea:focus {
+  border-color: #6366F1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .view-listing-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .view-listing-header {
+    flex-direction: column;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions button {
+    flex: 1;
+  }
+}
+
+

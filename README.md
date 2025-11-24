@@ -1,70 +1,179 @@
-# Getting Started with Create React App
+# Guestify - Online Platform Management System (OPMS)
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A comprehensive platform management system for Hosts, Guests, and Admins built with React, Firebase, and modern web technologies.
 
-## Available Scripts
+## 🚀 Project Overview
 
-In the project directory, you can run:
+Guestify is a full-featured OPMS that enables:
+- **Hosts** to manage listings, bookings, calendars, and payments
+- **Guests** to browse, book, and manage their travel experiences
+- **Admins** to oversee the platform with analytics, reports, and policy management
 
-### `npm start`
+## 📋 Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Host Features
+- Account registration (Email/SMS)
+- Listing management (Home, Experience, Service)
+- Rate, discount, and promo management
+- Image uploads and location mapping
+- Draft saving and favorites
+- Dashboard with analytics
+- Payment processing
+- Calendar availability management
+- Messaging system
+- Points & Rewards
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Guest Features
+- Account registration (Email/SMS)
+- Browse listings by category
+- Advanced search and filters
+- Booking management
+- Wishlist functionality
+- Messaging system
+- Points & Rewards
+- Recommendations based on history
 
-### `npm test`
+### Admin Features
+- Service fee management
+- Dashboard analytics
+- Policy & Compliance management
+- Report generation
+- Payment review and confirmation
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## 🛠️ Tech Stack
 
-### `npm run build`
+- **Frontend**: React 19.2.0
+- **Backend**: Firebase (Firestore, Authentication, Storage)
+- **Routing**: React Router DOM 6.26.2
+- **UI Libraries**: React Icons, React Toastify
+- **Date Management**: React DatePicker, date-fns
+- **Charts**: Recharts
+- **Testing**: React Testing Library, Jest
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## 📦 Installation & Setup
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Prerequisites
+- Node.js (v16 or higher)
+- npm or yarn
+- Firebase account
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Step 1: Install Dependencies
 
-### `npm run eject`
+```bash
+cd my-react-app
+npm install
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Step 2: Environment Variables
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Create a `.env` file in the `my-react-app` directory:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```env
+# Firebase Configuration
+REACT_APP_FIREBASE_API_KEY=your_api_key_here
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+REACT_APP_FIREBASE_APP_ID=your_app_id
+REACT_APP_FIREBASE_MEASUREMENT_ID=your_measurement_id
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+# App Configuration
+REACT_APP_API_URL=http://localhost:3001
+REACT_APP_ENV=development
+```
 
-## Learn More
+**Note**: You'll configure Firebase in Step 2. For now, you can use placeholder values.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+### Step 3: Run the Development Server
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+npm start
+```
 
-### Code Splitting
+The app will open at `http://localhost:3000`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Step 4: Build for Production
 
-### Analyzing the Bundle Size
+```bash
+npm run build
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Step 5: Run Tests
 
-### Making a Progressive Web App
+```bash
+npm test
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+To run tests with coverage:
 
-### Advanced Configuration
+```bash
+npm test -- --coverage --watchAll=false
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+## 📁 Project Structure
 
-### Deployment
+See [PROJECT_STRUCTURE.md](./PROJECT_STRUCTURE.md) for detailed folder structure.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## 🎨 Design System
 
-### `npm run build` fails to minify
+The project uses a modern, minimalist design system with:
+- **Primary Color**: Indigo (#6366F1)
+- **Secondary Color**: Emerald (#10B981)
+- **Accent Color**: Amber (#F59E0B)
+- **Typography**: Inter (body), Poppins (headings)
+- **Responsive Breakpoints**: Mobile-first approach
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+See `src/styles/theme.js` for complete design tokens.
+
+## 🔐 Security Notes
+
+- Never commit `.env` file to version control
+- Keep Firebase API keys secure
+- Use Firebase Security Rules for Firestore and Storage
+- Implement proper authentication checks
+
+## 📝 Development Steps
+
+This project is being developed step-by-step:
+
+1. ✅ **Step 1: Project Setup** (Current)
+2. ⏳ **Step 2: Firebase Configuration**
+3. ⏳ **Step 3: Authentication System**
+4. ⏳ **Step 4: Database Schema Design**
+5. ⏳ **Step 5: UI/UX Foundation**
+6. ⏳ **Step 6: Host Features**
+7. ⏳ **Step 7: Guest Features**
+8. ⏳ **Step 8: Admin Features**
+9. ⏳ **Step 9: Payment Integration**
+10. ⏳ **Step 10: Testing & Documentation**
+
+## 🧪 Testing
+
+The project aims for **85%+ test coverage**. Tests are organized in:
+- `src/__tests__/components/` - Component tests
+- `src/__tests__/services/` - Service tests
+- `src/__tests__/utils/` - Utility tests
+
+## 📚 Documentation
+
+- **User Manual**: Will be created in Step 10
+- **API Documentation**: Will be created in Step 10
+- **Developer Guide**: See PROJECT_STRUCTURE.md
+
+## 🤝 Contributing
+
+This is a step-by-step development project. Each step requires approval before proceeding.
+
+## 📄 License
+
+ISC
+
+## 👥 Authors
+
+IT305 Project Team
+
+---
+
+**Current Status**: Step 1 Complete ✅
+**Next Step**: Firebase Configuration

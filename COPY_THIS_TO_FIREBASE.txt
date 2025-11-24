@@ -1,0 +1,185 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user is owner
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Helper function to get user role
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return isAuthenticated() && getUserRole() == 'admin';
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Allow reading user profiles for email existence checks during registration
+      allow read: if true;
+      // Users can create their own profile during registration
+      // Document ID (userId) must match the authenticated user's UID
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      // Users can update their own profile
+      allow update: if isAuthenticated() && request.auth.uid == userId;
+      // Only admins can delete users
+      allow delete: if isAdmin();
+    }
+    
+    // Listings collection
+    match /listings/{listingId} {
+      // Authenticated users can read published listings
+      allow read: if isAuthenticated() && (
+        resource.data.status == 'published' ||
+        resource.data.hostId == request.auth.uid
+      );
+      // Any authenticated user can create listings
+      allow create: if isAuthenticated() && 
+        request.resource.data.hostId == request.auth.uid;
+      // Only listing owner can update
+      allow update: if isAuthenticated() && 
+        resource.data.hostId == request.auth.uid;
+      // Only listing owner or admin can delete
+      allow delete: if isAuthenticated() && (
+        resource.data.hostId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+    
+    // Bookings collection
+    match /bookings/{bookingId} {
+      // Users can read their own bookings (as guest or host)
+      allow read: if isAuthenticated() && (
+        resource.data.guestId == request.auth.uid ||
+        resource.data.hostId == request.auth.uid ||
+        isAdmin()
+      );
+      // Authenticated users can create bookings
+      allow create: if isAuthenticated() && 
+        request.resource.data.guestId == request.auth.uid;
+      // Guest or host can update their bookings
+      allow update: if isAuthenticated() && (
+        resource.data.guestId == request.auth.uid ||
+        resource.data.hostId == request.auth.uid ||
+        isAdmin()
+      );
+      // Only admin can delete bookings
+      allow delete: if isAdmin();
+    }
+    
+    // Messages collection
+    match /messages/{messageId} {
+      // Users can read messages they sent or received
+      allow read: if isAuthenticated() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid
+      );
+      // Users can create messages where they are the sender
+      allow create: if isAuthenticated() && 
+        request.resource.data.senderId == request.auth.uid;
+      // Users can update messages they sent
+      allow update: if isAuthenticated() && 
+        resource.data.senderId == request.auth.uid;
+      // Users can delete messages they sent or received
+      allow delete: if isAuthenticated() && (
+        resource.data.senderId == request.auth.uid ||
+        resource.data.receiverId == request.auth.uid
+      );
+    }
+    
+    // Reviews collection
+    match /reviews/{reviewId} {
+      // Anyone can read published reviews
+      allow read: if isAuthenticated();
+      // Users can create reviews for bookings they made
+      allow create: if isAuthenticated() && 
+        request.resource.data.guestId == request.auth.uid;
+      // Users can update their own reviews
+      allow update: if isAuthenticated() && 
+        resource.data.guestId == request.auth.uid;
+      // Users can delete their own reviews, admins can delete any
+      allow delete: if isAuthenticated() && (
+        resource.data.guestId == request.auth.uid ||
+        isAdmin()
+      );
+    }
+    
+    // Wishlist collection
+    match /wishlists/{wishlistId} {
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+    }
+
+    // Hosts collection
+    match /hosts/{hostId} {
+      // Allow reading hosts for email existence checks during registration
+      allow read: if true;
+      // Allow creating host profile if authenticated
+      // Document ID (hostId) must match the authenticated user's UID
+      allow create: if isAuthenticated() && hostId == request.auth.uid;
+      allow update: if isAuthenticated() && (hostId == request.auth.uid || isAdmin());
+      allow delete: if isAdmin();
+    }
+    
+    // Payments collection
+    match /payments/{paymentId} {
+      // Users can read payments related to them
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.hostId == request.auth.uid ||
+        isAdmin()
+      );
+      // Only system can create payments (handled server-side)
+      allow create: if false;
+      // Only admins can update payments
+      allow update: if isAdmin();
+      // No one can delete payments (for audit trail)
+      allow delete: if false;
+    }
+    
+    // Admin collection (admin only)
+    match /admin/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Reports collection (admin only)
+    match /reports/{reportId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // Policies collection (admin can write, all authenticated can read)
+    match /policies/{policyId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Coupons collection
+    match /coupons/{couponId} {
+      // Anyone authenticated can read active coupons
+      allow read: if isAuthenticated() && resource.data.active == true;
+      // Only admins can create/update/delete coupons
+      allow write: if isAdmin();
+    }
+    
+    // Points & Rewards collection
+    match /points/{userId} {
+      // Users can only read their own points
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      // System can update points (handled server-side)
+      allow write: if isAdmin();
+    }
+  }
+}

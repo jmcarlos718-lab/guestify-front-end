@@ -1,0 +1,297 @@
+/* Host Dashboard Styles */
+
+.host-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.dashboard-header {
+  margin-bottom: 1rem;
+}
+
+.dashboard-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.dashboard-subtitle {
+  font-size: 1rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 1.5rem;
+}
+
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #6366F1;
+  margin: 0 0 0.5rem 0;
+}
+
+.stat-label {
+  font-size: 0.9375rem;
+  color: #6B7280;
+  margin: 0;
+}
+
+.dashboard-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+.dashboard-section {
+  min-height: 300px;
+}
+
+.bookings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.booking-item {
+  padding: 1rem;
+  background: #F9FAFB;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
+}
+
+.booking-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.booking-info strong {
+  color: #111827;
+  font-size: 0.9375rem;
+}
+
+.booking-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: #E5E7EB;
+  color: #374151;
+}
+
+.booking-status.confirmed {
+  background: #D1FAE5;
+  color: #065F46;
+}
+
+.booking-status.pending {
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.booking-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+
+.booking-details span {
+  display: block;
+}
+
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: #F9FAFB;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
+}
+
+.activity-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.activity-date {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6B7280;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-sections {
+    grid-template-columns: 1fr;
+  }
+}
+
+.refund-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.refund-request-item {
+  padding: 1rem;
+  background: #FEF3C7;
+  border-radius: 0.5rem;
+  border: 1px solid #FCD34D;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.refund-request-info {
+  flex: 1;
+}
+
+.refund-request-info strong {
+  color: #111827;
+  font-size: 0.9375rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.refund-request-details {
+  font-size: 0.875rem;
+  color: #6B7280;
+  margin: 0.25rem 0;
+}
+
+.refund-request-reason {
+  font-size: 0.875rem;
+  color: #374151;
+  margin: 0.5rem 0 0 0;
+}
+
+.refund-request-reason strong {
+  color: #111827;
+  margin-right: 0.5rem;
+}
+
+.refund-request-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.reject-refund-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.refund-summary {
+  padding: 1rem;
+  background: #F9FAFB;
+  border-radius: 0.5rem;
+  border: 1px solid #E5E7EB;
+}
+
+.refund-summary p {
+  margin: 0.5rem 0;
+  font-size: 0.9375rem;
+  color: #374151;
+}
+
+.refund-summary strong {
+  color: #111827;
+  margin-right: 0.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #111827;
+  background-color: #FFFFFF;
+  border: 2px solid #E5E7EB;
+  border-radius: 0.5rem;
+  outline: none;
+  transition: all 0.3s ease-in-out;
+  resize: vertical;
+}
+
+.form-textarea:focus {
+  border-color: #6366F1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.refund-status-pending {
+  color: #F59E0B;
+  font-weight: 600;
+}
+
+.refund-status-approved {
+  color: #10B981;
+  font-weight: 600;
+}
+
+.refund-status-rejected {
+  color: #EF4444;
+  font-weight: 600;
+}
+
+
+
+
+

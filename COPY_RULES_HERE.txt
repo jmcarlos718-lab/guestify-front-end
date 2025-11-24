@@ -1,0 +1,35 @@
+COPY THE ENTIRE CONTENTS BELOW AND PASTE INTO FIREBASE CONSOLE → FIRESTORE → RULES TAB
+
+================================================================================
+
+
+================================================================================
+
+INSTRUCTIONS:
+1. Go to https://console.firebase.google.com/
+2. Select your project
+3. Click "Firestore Database" → "Rules" tab
+4. DELETE all existing rules
+5. PASTE the rules above
+6. Click "Publish"
+7. Wait 10-20 seconds
+8. Try signing up again!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
