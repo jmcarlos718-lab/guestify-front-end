@@ -354,6 +354,8 @@ const ListingDetail = () => {
         adminIncome,
         hostIncome,
         payoutStatus: 'pending',
+        hostPayoutStatus: 'pending',
+        adminPayoutStatus: 'pending',
         status: PAYMENT_STATUS.COMPLETED
       });
       

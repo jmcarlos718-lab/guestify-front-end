@@ -1,16 +1,17 @@
 /**
  * Admin Reports Page
- * 
- * Generate and view platform reports
+ *
+ * Generate and print/export platform reports pulled from Firestore.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
 import Input from '../../components/common/Input';
-import { formatDate } from '../../utils/helpers';
+import { formatCurrency, formatDate } from '../../utils/helpers';
 import { toast } from 'react-toastify';
+import * as firestoreService from '../../services/firestoreService';
 import './Reports.css';
 
 const Reports = () => {
@@ -19,36 +20,249 @@ const Reports = () => {
     startDate: '',
     endDate: ''
   });
-  const [generating, setGenerating] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [reportData, setReportData] = useState([]);
 
   const reportTypes = [
     { value: 'bookings', label: 'Bookings Report', description: 'All booking transactions' },
-    { value: 'users', label: 'Users Report', description: 'User registrations and activity' },
-    { value: 'listings', label: 'Listings Report', description: 'Listing performance and status' },
     { value: 'revenue', label: 'Revenue Report', description: 'Platform revenue and fees' },
-    { value: 'reviews', label: 'Reviews Report', description: 'User reviews and ratings' }
+    { value: 'users', label: 'Users Report', description: 'User registrations and activity' },
+    { value: 'listings', label: 'Listings Report', description: 'Listing performance and status' }
   ];
 
-  const handleGenerateReport = async () => {
+  const ensureDates = () => {
     if (!dateRange.startDate || !dateRange.endDate) {
       toast.error('Please select start and end dates');
-      return;
+      return null;
     }
+    const start = new Date(dateRange.startDate);
+    const end = new Date(dateRange.endDate);
+    end.setHours(23, 59, 59, 999);
+    return { start, end };
+  };
 
-    setGenerating(true);
-    
-    // Simulate report generation
-    setTimeout(() => {
-      toast.success('Report generated successfully!');
-      setGenerating(false);
-      // In real implementation, this would download or display the report
-    }, 2000);
+  const handleGenerateReport = async () => {
+    const ranges = ensureDates();
+    if (!ranges) return;
+
+    setLoading(true);
+    try {
+      let data = [];
+      if (reportType === 'bookings') {
+        data = await loadBookings(ranges);
+      } else if (reportType === 'revenue') {
+        data = await loadPayments(ranges);
+      } else if (reportType === 'users') {
+        data = await loadUsers(ranges);
+      } else if (reportType === 'listings') {
+        data = await loadListings(ranges);
+      }
+      setReportData(data);
+      toast.success(`Generated ${data.length} records`);
+    } catch (error) {
+      console.error('Report generation error:', error);
+      toast.error(error.message || 'Unable to generate report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadBookings = async ({ start, end }) => {
+    const bookings = await firestoreService.getDocuments('bookings', [], null, 'asc');
+    return bookings
+      .filter((b) => {
+        const created = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+        return created >= start && created <= end;
+      })
+      .map((b) => ({
+        id: b.id,
+        guestId: b.guestId,
+        hostId: b.hostId,
+        total: b.pricing?.total || 0,
+        currency: b.pricing?.currency || 'PHP',
+        status: b.status,
+        createdAt: b.createdAt
+      }));
+  };
+
+  const loadPayments = async ({ start, end }) => {
+    const payments = await firestoreService.getDocuments('payments', [], null, 'asc');
+    return payments
+      .filter((p) => {
+        const created = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || 0);
+        return created >= start && created <= end;
+      })
+      .map((p) => ({
+        id: p.id,
+        amount: p.amount,
+        adminIncome: p.adminIncome,
+        hostIncome: p.hostIncome,
+        status: p.status,
+        payoutStatus: p.adminPayoutStatus || p.payoutStatus,
+        createdAt: p.createdAt,
+        currency: p.currency || 'PHP'
+      }));
+  };
+
+  const loadUsers = async ({ start, end }) => {
+    const users = await firestoreService.getDocuments('users', [], null, 'asc');
+    return users.filter((u) => {
+      const created = u.createdAt?.toDate ? u.createdAt.toDate() : new Date(u.createdAt || 0);
+      return created >= start && created <= end;
+    });
+  };
+
+  const loadListings = async ({ start, end }) => {
+    const listings = await firestoreService.getDocuments('listings', [], null, 'asc');
+    return listings.filter((l) => {
+      const created = l.createdAt?.toDate ? l.createdAt.toDate() : new Date(l.createdAt || 0);
+      return created >= start && created <= end;
+    });
   };
 
   const handleExport = (format) => {
-    toast.success(`Exporting report as ${format.toUpperCase()}...`);
-    // In real implementation, this would export the report
+    if (!reportData.length) {
+      toast.error('No data to export yet.');
+      return;
+    }
+
+    const headers = columnConfig.map((c) => c.label);
+    const rows = reportData.map((row) =>
+      columnConfig
+        .map((c) => {
+          const value = typeof c.format === 'function' ? c.format(row) : row[c.key];
+          return `"${String(value ?? '')}"`;
+        })
+        .join(',')
+    );
+    const csv = [headers.join(','), ...rows].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${reportType}-report.${format}`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported ${reportData.length} rows as ${format.toUpperCase()}`);
   };
+
+  const handlePrint = () => {
+    if (!reportData.length) {
+      toast.error('No data to print.');
+      return;
+    }
+    const win = window.open('', 'PRINT', 'height=900,width=900');
+    if (!win) return;
+
+    const rows = reportData
+      .map((row) => {
+        const cells = columnConfig
+          .map((c) => `<td>${typeof c.format === 'function' ? c.format(row) : row[c.key] ?? ''}</td>`)
+          .join('');
+        return `<tr>${cells}</tr>`;
+      })
+      .join('');
+
+    win.document.write(`
+      <html>
+        <head>
+          <title>${reportTypes.find((r) => r.value === reportType)?.label || 'Report'}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 16px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background: #f5f5f5; }
+          </style>
+        </head>
+        <body>
+          <h1>${reportTypes.find((r) => r.value === reportType)?.label || 'Report'}</h1>
+          <p>Generated: ${new Date().toLocaleString()}</p>
+          <table>
+            <thead>
+              <tr>${columnConfig.map((c) => `<th>${c.label}</th>`).join('')}</tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
+  };
+
+  const columnConfig = useMemo(() => {
+    if (reportType === 'bookings') {
+      return [
+        { key: 'id', label: 'Booking' },
+        { key: 'guestId', label: 'Guest' },
+        { key: 'hostId', label: 'Host' },
+        { key: 'total', label: 'Total', format: (row) => formatCurrency(row.total, row.currency) },
+        { key: 'status', label: 'Status' },
+        {
+          key: 'createdAt',
+          label: 'Created',
+          format: (row) =>
+            formatDate(row.createdAt?.toDate ? row.createdAt.toDate() : row.createdAt || new Date())
+        }
+      ];
+    }
+
+    if (reportType === 'revenue') {
+      return [
+        { key: 'id', label: 'Payment' },
+        { key: 'amount', label: 'Total', format: (row) => formatCurrency(row.amount, row.currency) },
+        {
+          key: 'adminIncome',
+          label: 'Admin Income',
+          format: (row) => formatCurrency(row.adminIncome, row.currency)
+        },
+        {
+          key: 'hostIncome',
+          label: 'Host Income',
+          format: (row) => formatCurrency(row.hostIncome, row.currency)
+        },
+        { key: 'payoutStatus', label: 'Payout Status' },
+        {
+          key: 'createdAt',
+          label: 'Date',
+          format: (row) =>
+            formatDate(row.createdAt?.toDate ? row.createdAt.toDate() : row.createdAt || new Date())
+        }
+      ];
+    }
+
+    if (reportType === 'users') {
+      return [
+        { key: 'name', label: 'Name' },
+        { key: 'email', label: 'Email' },
+        { key: 'role', label: 'Role' },
+        { key: 'status', label: 'Status' },
+        {
+          key: 'createdAt',
+          label: 'Joined',
+          format: (row) =>
+            formatDate(row.createdAt?.toDate ? row.createdAt.toDate() : row.createdAt || new Date())
+        }
+      ];
+    }
+
+    return [
+      { key: 'title', label: 'Title' },
+      { key: 'hostId', label: 'Host' },
+      { key: 'status', label: 'Status' },
+      { key: 'price', label: 'Price' },
+      {
+        key: 'createdAt',
+        label: 'Created',
+        format: (row) =>
+          formatDate(row.createdAt?.toDate ? row.createdAt.toDate() : row.createdAt || new Date())
+      }
+    ];
+  }, [reportType]);
 
   return (
     <DashboardLayout>
@@ -56,7 +270,7 @@ const Reports = () => {
         <div className="reports-header">
           <div>
             <h1>Reports</h1>
-            <p>Generate and export platform reports</p>
+            <p>Generate, print, and export platform reports</p>
           </div>
         </div>
 
@@ -89,7 +303,7 @@ const Reports = () => {
                   name="startDate"
                   type="date"
                   value={dateRange.startDate}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                  onChange={(e) => setDateRange((prev) => ({ ...prev, startDate: e.target.value }))}
                   fullWidth
                 />
                 <Input
@@ -97,7 +311,7 @@ const Reports = () => {
                   name="endDate"
                   type="date"
                   value={dateRange.endDate}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                  onChange={(e) => setDateRange((prev) => ({ ...prev, endDate: e.target.value }))}
                   fullWidth
                 />
               </div>
@@ -107,117 +321,62 @@ const Reports = () => {
                   variant="primary"
                   size="lg"
                   onClick={handleGenerateReport}
-                  loading={generating}
-                  disabled={generating}
+                  loading={loading}
+                  disabled={loading}
                 >
                   Generate Report
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handlePrint}
+                  disabled={!reportData.length}
+                  style={{ marginLeft: '0.5rem' }}
+                >
+                  Print
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => handleExport('csv')}
+                  disabled={!reportData.length}
+                  style={{ marginLeft: '0.5rem' }}
+                >
+                  Export CSV
                 </Button>
               </div>
             </div>
           </Card>
 
-          {/* Recent Reports */}
-          <Card title="Recent Reports" className="reports-list-card">
-            <div className="reports-list">
-              <div className="report-item">
-                <div className="report-info">
-                  <div className="report-name">
-                    <strong>Bookings Report</strong>
-                    <span className="report-date">Generated on {formatDate(new Date())}</span>
-                  </div>
-                  <div className="report-details">
-                    <span>Period: Jan 1 - Jan 31, 2024</span>
-                    <span>Records: 1,234</span>
-                  </div>
-                </div>
-                <div className="report-actions">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleExport('pdf')}
-                  >
-                    PDF
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleExport('csv')}
-                  >
-                    CSV
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleExport('excel')}
-                  >
-                    Excel
-                  </Button>
-                </div>
+          <Card title="Report Preview" className="reports-list-card">
+            {loading ? (
+              <p>Generating report...</p>
+            ) : reportData.length === 0 ? (
+              <p>No data yet. Generate a report to see results.</p>
+            ) : (
+              <div className="report-table-wrapper">
+                <table className="report-table">
+                  <thead>
+                    <tr>
+                      {columnConfig.map((col) => (
+                        <th key={col.key}>{col.label}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportData.map((row, index) => (
+                      <tr key={row.id || row.email || index}>
+                        {columnConfig.map((col) => (
+                          <td key={col.key}>
+                            {typeof col.format === 'function' ? col.format(row) : row[col.key] ?? '—'}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-
-              <div className="report-item">
-                <div className="report-info">
-                  <div className="report-name">
-                    <strong>Users Report</strong>
-                    <span className="report-date">Generated on {formatDate(new Date(Date.now() - 86400000))}</span>
-                  </div>
-                  <div className="report-details">
-                    <span>Period: Dec 1 - Dec 31, 2023</span>
-                    <span>Records: 856</span>
-                  </div>
-                </div>
-                <div className="report-actions">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleExport('pdf')}
-                  >
-                    PDF
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleExport('csv')}
-                  >
-                    CSV
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Report Templates */}
-          <Card title="Quick Reports" className="quick-reports-card">
-            <div className="quick-reports">
-              <button className="quick-report-btn">
-                <span className="quick-report-icon">📊</span>
-                <div>
-                  <strong>Today's Bookings</strong>
-                  <span>View today's booking activity</span>
-                </div>
-              </button>
-              <button className="quick-report-btn">
-                <span className="quick-report-icon">💰</span>
-                <div>
-                  <strong>Monthly Revenue</strong>
-                  <span>Current month revenue summary</span>
-                </div>
-              </button>
-              <button className="quick-report-btn">
-                <span className="quick-report-icon">👥</span>
-                <div>
-                  <strong>New Users</strong>
-                  <span>Users registered this week</span>
-                </div>
-              </button>
-              <button className="quick-report-btn">
-                <span className="quick-report-icon">⭐</span>
-                <div>
-                  <strong>Top Listings</strong>
-                  <span>Best performing listings</span>
-                </div>
-              </button>
-            </div>
+            )}
           </Card>
         </div>
       </div>

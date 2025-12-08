@@ -21,6 +21,8 @@ import { formatCurrency } from '../../utils/helpers';
 import { toast } from 'react-toastify';
 import { useAuthContext } from '../../context/AuthContext';
 import { auth } from '../../config/firebase';
+import Input from '../../components/common/Input';
+import { requestAdminPayout } from '../../services/payoutService';
 
 const RESOURCE_CONFIG = {
   users: {
@@ -191,6 +193,10 @@ const AdminDashboard = () => {
     mode: 'create',
     record: null
   });
+  const [payoutSummary, setPayoutSummary] = useState({ available: 0, processing: 0, paid: 0 });
+  const [paypalEmail, setPaypalEmail] = useState('');
+  const [payoutLoading, setPayoutLoading] = useState(false);
+  const [paymentsData, setPaymentsData] = useState([]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -200,6 +206,12 @@ const AdminDashboard = () => {
   }, [searchTerm]);
 
   useEffect(() => {
+    if (user?.email) {
+      setPaypalEmail(user.email);
+    }
+  }, [user?.email]);
+
+  useEffect(() => {
     const loadStats = async () => {
       try {
         // Load stats from backend API
@@ -207,6 +219,7 @@ const AdminDashboard = () => {
         
         // Load earnings from Firestore payments
         let totalEarnings = 0;
+        let payoutTotals = { available: 0, processing: 0, paid: 0 };
         try {
           // Wait for Firebase Auth to be ready (admin sign-in might be in progress)
           let currentUser = auth.currentUser;
@@ -237,37 +250,44 @@ const AdminDashboard = () => {
             
             console.log('[AdminDashboard] Loaded payments:', payments.length);
             
-            // Calculate total admin earnings
-          // adminIncome is already set to 15% of total payment amount when payment is created
-          // If refunds were processed, adminIncome is already reduced in the payment document
-          totalEarnings = payments.reduce((sum, payment) => {
-            const amount = typeof payment.amount === 'number' ? payment.amount : parseFloat(payment.amount) || 0;
-            
-            // Use adminIncome field if available (which is 15% of payment amount, minus any refund deductions)
-            // If adminIncome is not set, calculate it as 15% of amount (fallback for old payments)
-            let adminIncome = payment.adminIncome;
-            if (adminIncome === null || adminIncome === undefined) {
-              // Fallback: calculate 15% if adminIncome is not set
-              adminIncome = amount * 0.15;
-            }
-            
-            // Ensure we're working with a number
-            const incomeValue = typeof adminIncome === 'number' ? adminIncome : parseFloat(adminIncome) || 0;
-            
-            // Log for debugging
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[AdminDashboard] Payment:', {
-                id: payment.id,
-                amount,
-                adminIncome: incomeValue,
-                hostIncome: payment.hostIncome,
-                calculated: payment.adminIncome === null || payment.adminIncome === undefined
-              });
-            }
-            
-            return sum + incomeValue;
-          }, 0);
-          
+            // Calculate total admin earnings and payout buckets
+            totalEarnings = payments.reduce((sum, payment) => {
+              const amount = typeof payment.amount === 'number' ? payment.amount : parseFloat(payment.amount) || 0;
+              
+              // Use adminIncome field if available (which is 15% of payment amount, minus any refund deductions)
+              // If adminIncome is not set, calculate it as 15% of amount (fallback for old payments)
+              let adminIncome = payment.adminIncome;
+              if (adminIncome === null || adminIncome === undefined) {
+                // Fallback: calculate 15% if adminIncome is not set
+                adminIncome = amount * 0.15;
+              }
+              
+              // Ensure we're working with a number
+              const incomeValue = typeof adminIncome === 'number' ? adminIncome : parseFloat(adminIncome) || 0;
+              
+              const status = payment.adminPayoutStatus || 'pending';
+              if (status === 'paid') {
+                payoutTotals.paid += incomeValue;
+              } else if (status === 'processing') {
+                payoutTotals.processing += incomeValue;
+              } else {
+                payoutTotals.available += incomeValue;
+              }
+              
+              // Log for debugging
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[AdminDashboard] Payment:', {
+                  id: payment.id,
+                  amount,
+                  adminIncome: incomeValue,
+                  hostIncome: payment.hostIncome,
+                  calculated: payment.adminIncome === null || payment.adminIncome === undefined
+                });
+              }
+              
+              return sum + incomeValue;
+            }, 0);
+            setPaymentsData(payments);
             console.log('[AdminDashboard] Total admin earnings calculated:', totalEarnings);
           }
         } catch (paymentError) {
@@ -287,6 +307,7 @@ const AdminDashboard = () => {
           listings: data.listings || 0,
           totalEarnings
         });
+        setPayoutSummary(payoutTotals);
       } catch (error) {
         toast.error(error.message || 'Unable to load dashboard stats');
       } finally {
@@ -390,8 +411,82 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleWithdraw = async () => {
+    if (!paypalEmail) {
+      toast.error('Enter a PayPal sandbox email first.');
+      return;
+    }
+    setPayoutLoading(true);
+    try {
+      const result = await requestAdminPayout(paypalEmail);
+      toast.success(
+        result.simulated
+          ? 'Payout simulated (missing sandbox credentials).'
+          : 'Payout sent to PayPal sandbox.'
+      );
+      // Reload to refresh earnings and payout totals
+      window.location.reload();
+    } catch (error) {
+      toast.error(error.message || 'Unable to withdraw now.');
+    } finally {
+      setPayoutLoading(false);
+    }
+  };
+
+  const handlePrintReport = () => {
+    const win = window.open('', 'PRINT', 'height=900,width=900');
+    if (!win) return;
+
+    const rows = paymentsData
+      .map((p) => {
+        const date = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || Date.now());
+        return `
+          <tr>
+            <td>${p.id?.substring(0, 8) || ''}</td>
+            <td>${formatCurrency(p.amount || 0, p.currency)}</td>
+            <td>${formatCurrency(p.adminIncome || 0, p.currency)}</td>
+            <td>${formatCurrency(p.hostIncome || 0, p.currency)}</td>
+            <td>${p.adminPayoutStatus || 'pending'}</td>
+            <td>${date.toLocaleString()}</td>
+          </tr>
+        `;
+      })
+      .join('');
+
+    win.document.write(`
+      <html>
+        <head>
+          <title>Admin Income Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 16px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background: #f5f5f5; }
+          </style>
+        </head>
+        <body>
+          <h1>Admin Income Report</h1>
+          <p>Generated: ${new Date().toLocaleString()}</p>
+          <p>Available: ${formatCurrency(payoutSummary.available, 'PHP')}</p>
+          <p>Processing: ${formatCurrency(payoutSummary.processing, 'PHP')}</p>
+          <p>Paid: ${formatCurrency(payoutSummary.paid, 'PHP')}</p>
+          <table>
+            <thead>
+              <tr><th>Payment</th><th>Total</th><th>Admin Income</th><th>Host Income</th><th>Payout Status</th><th>Date</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
+  };
+
   const StatsCards = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-4">
       <StatCard label="Total Users" value={stats.users} accent="text-blue-600" />
       <StatCard label="Verified Users" value={stats.verifiedUsers} accent="text-emerald-600" />
       <StatCard label="Hosts" value={stats.hosts} accent="text-amber-600" />
@@ -400,6 +495,12 @@ const AdminDashboard = () => {
         label="Admin Income (15% of payments)" 
         value={formatCurrency(stats.totalEarnings, 'PHP')} 
         accent="text-green-600" 
+        isCurrency={true}
+      />
+      <StatCard 
+        label="Withdrawable Income" 
+        value={formatCurrency(payoutSummary.available, 'PHP')} 
+        accent="text-green-700" 
         isCurrency={true}
       />
     </div>
@@ -431,6 +532,71 @@ const AdminDashboard = () => {
         </header>
 
         <StatsCards />
+
+        <div className="bg-white rounded-2xl shadow-card p-6 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900">Income & Withdrawals</h2>
+              <p className="text-slate-500 text-sm">
+                View admin earnings and withdraw via PayPal sandbox.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handlePrintReport}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Print Income Report
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <p className="text-sm text-slate-500">Available</p>
+              <p className="text-2xl font-semibold text-emerald-600">
+                {formatCurrency(payoutSummary.available, 'PHP')}
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <p className="text-sm text-slate-500">Processing</p>
+              <p className="text-2xl font-semibold text-amber-600">
+                {formatCurrency(payoutSummary.processing, 'PHP')}
+              </p>
+            </div>
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <p className="text-sm text-slate-500">Paid Out</p>
+              <p className="text-2xl font-semibold text-slate-900">
+                {formatCurrency(payoutSummary.paid, 'PHP')}
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="PayPal Sandbox Email"
+              name="paypalEmail"
+              value={paypalEmail}
+              placeholder="projectit305@gmail.com"
+              onChange={(e) => setPaypalEmail(e.target.value)}
+              fullWidth
+            />
+            <div className="flex gap-3 items-end">
+              <button
+                onClick={handleWithdraw}
+                disabled={payoutLoading || payoutSummary.available <= 0}
+                className={`rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition ${
+                  payoutLoading || payoutSummary.available <= 0
+                    ? 'bg-slate-300 cursor-not-allowed'
+                    : 'bg-brand-600 hover:bg-brand-700'
+                }`}
+              >
+                {payoutLoading ? 'Processing...' : 'Withdraw to PayPal'}
+              </button>
+              <p className="text-xs text-slate-500">
+                If sandbox credentials are not configured, payout is simulated and marked paid.
+              </p>
+            </div>
+          </div>
+        </div>
 
         <div className="bg-white rounded-2xl shadow-card p-6 space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../context/AuthContext';
 import { updateUserPassword } from '../../services/authService';
+import { uploadFile } from '../../services/storageService';
 import { ROUTES } from '../../config/constants';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/common/Card';
@@ -31,6 +32,9 @@ const Settings = () => {
     phone: '',
     age: ''
   });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState('');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   // Password form state
   const [passwordData, setPasswordData] = useState({
@@ -46,6 +50,7 @@ const Settings = () => {
         phone: currentProfile.phone || '',
         age: currentProfile.age || ''
       });
+      setAvatarPreview(currentProfile.photoURL || '');
     }
   }, [currentProfile]);
 
@@ -70,10 +75,19 @@ const Settings = () => {
     setLoading(true);
 
     try {
+      let photoURL = currentProfile?.photoURL || '';
+      const uid = user?.uid || currentProfile?.id || currentProfile?.uid;
+      if (photoFile && uid) {
+        setUploadingPhoto(true);
+        photoURL = await uploadFile(photoFile, `users/${uid}/avatar/`);
+        setUploadingPhoto(false);
+      }
+
       const updates = {
         displayName: profileData.displayName.trim(),
         phone: profileData.phone.trim(),
-        age: profileData.age ? parseInt(profileData.age) : null
+        age: profileData.age ? parseInt(profileData.age) : null,
+        photoURL
       };
 
       // If admin is using separate auth, we might need different update logic
@@ -149,6 +163,31 @@ const Settings = () => {
           {activeTab === 'profile' && (
             <Card className="settings-card">
               <h2>Profile Information</h2>
+              <div className="avatar-upload">
+                <div className="avatar-circle">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Profile" />
+                  ) : (
+                    <span className="avatar-initial">
+                      {(profileData.displayName || currentUser?.email || 'U').charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <label className="avatar-button">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setPhotoFile(file);
+                        setAvatarPreview(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                  {uploadingPhoto ? 'Uploading...' : 'Change Photo'}
+                </label>
+              </div>
               <form onSubmit={handleUpdateProfile}>
                 <div className="form-group">
                   <Input
@@ -277,6 +316,7 @@ const Settings = () => {
 };
 
 export default Settings;
+
 
 
 

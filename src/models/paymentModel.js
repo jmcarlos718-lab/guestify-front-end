@@ -25,6 +25,8 @@ export const createPaymentDocument = (paymentData) => {
     adminIncome = null,
     hostIncome = null,
     payoutStatus = 'pending',
+    hostPayoutStatus = 'pending',
+    adminPayoutStatus = 'pending',
     createdAt = new Date(),
     updatedAt = new Date()
   } = paymentData;
@@ -44,7 +46,9 @@ export const createPaymentDocument = (paymentData) => {
     transactionId,
     adminIncome: calculatedAdminIncome,
     hostIncome: calculatedHostIncome,
-    payoutStatus, // pending, paid
+    payoutStatus, // deprecated, kept for backward compatibility
+    hostPayoutStatus,
+    adminPayoutStatus,
     metadata: {
       cardLast4: metadata.cardLast4 || null,
       cardBrand: metadata.cardBrand || null,

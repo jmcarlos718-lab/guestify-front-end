@@ -15,6 +15,7 @@ import { useAuthContext } from '../../context/AuthContext';
 import { getListings } from '../../services/listingService';
 import { getUserBookings } from '../../services/bookingService';
 import { getHostRefundRequests, approveRefund, rejectRefund, getHostInitiatedRefundRequests } from '../../services/refundService';
+import { getHostPayoutSummary, requestHostPayout } from '../../services/payoutService';
 import * as firestoreService from '../../services/firestoreService';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
@@ -38,12 +39,23 @@ const HostDashboard = () => {
   const [selectedRefund, setSelectedRefund] = useState(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [processingRefund, setProcessingRefund] = useState(false);
+  const [paypalEmail, setPaypalEmail] = useState('');
+  const [payoutLoading, setPayoutLoading] = useState(false);
+  const [payoutSummary, setPayoutSummary] = useState({ available: 0, processing: 0, paid: 0 });
+  const [paymentsData, setPaymentsData] = useState([]);
+  const [bookingsData, setBookingsData] = useState([]);
 
   useEffect(() => {
     if (user?.uid) {
       loadDashboardData();
     }
   }, [user?.uid]);
+
+  useEffect(() => {
+    if (user?.email) {
+      setPaypalEmail(user.email);
+    }
+  }, [user?.email]);
 
   const loadDashboardData = async () => {
     try {
@@ -143,6 +155,15 @@ const HostDashboard = () => {
       });
       setTodayBookings(todayBookingsList);
       setRecentActivity(activity);
+      setPaymentsData(payments);
+      setBookingsData(bookings);
+
+      try {
+        const payout = await getHostPayoutSummary(user.uid);
+        setPayoutSummary(payout);
+      } catch (err) {
+        console.error('Error loading payout summary:', err);
+      }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       toast.error('Failed to load dashboard data');
@@ -256,6 +277,103 @@ const HostDashboard = () => {
       });
   };
 
+  const handleWithdraw = async () => {
+    if (!paypalEmail) {
+      toast.error('Enter a PayPal sandbox email first.');
+      return;
+    }
+    setPayoutLoading(true);
+    try {
+      const result = await requestHostPayout(user.uid, paypalEmail);
+      toast.success(
+        result.simulated
+          ? 'Withdrawal simulated (PayPal sandbox credentials missing).'
+          : 'Withdrawal sent to PayPal sandbox.'
+      );
+      await loadDashboardData();
+    } catch (error) {
+      toast.error(error.message || 'Unable to withdraw right now.');
+    } finally {
+      setPayoutLoading(false);
+    }
+  };
+
+  const handlePrintReport = () => {
+    const win = window.open('', 'PRINT', 'height=900,width=900');
+    if (!win) return;
+
+    const formatCurrencySafe = (value, currency = 'PHP') =>
+      formatCurrency(value || 0, currency);
+
+    const rows = paymentsData
+      .map(
+        (p) => `
+        <tr>
+          <td>${p.id?.substring(0, 8) || ''}</td>
+          <td>${formatCurrencySafe(p.hostIncome, p.currency)}</td>
+          <td>${p.hostPayoutStatus || p.payoutStatus || 'pending'}</td>
+          <td>${new Date(
+            p.createdAt?.toDate ? p.createdAt.toDate() : p.createdAt || Date.now()
+          ).toLocaleString()}</td>
+        </tr>`
+      )
+      .join('');
+
+    const bookingRows = bookingsData
+      .map(
+        (b) => `
+        <tr>
+          <td>${b.id?.substring(0, 8) || ''}</td>
+          <td>${b.status}</td>
+          <td>${formatCurrencySafe(b.pricing?.total, b.pricing?.currency)}</td>
+          <td>${new Date(
+            b.createdAt?.toDate ? b.createdAt.toDate() : b.createdAt || Date.now()
+          ).toLocaleString()}</td>
+        </tr>`
+      )
+      .join('');
+
+    win.document.write(`
+      <html>
+        <head>
+          <title>Host Income & Bookings Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 16px; }
+            h1 { margin-bottom: 0; }
+            table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            th { background: #f5f5f5; }
+          </style>
+        </head>
+        <body>
+          <h1>Host Report</h1>
+          <p>Generated: ${new Date().toLocaleString()}</p>
+          <h2>Income</h2>
+          <p>Available: ${formatCurrencySafe(payoutSummary.available)}</p>
+          <p>Processing: ${formatCurrencySafe(payoutSummary.processing)}</p>
+          <p>Paid Out: ${formatCurrencySafe(payoutSummary.paid)}</p>
+          <table>
+            <thead>
+              <tr><th>Payment</th><th>Host Income</th><th>Payout Status</th><th>Date</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <h2>Bookings</h2>
+          <table>
+            <thead>
+              <tr><th>Booking</th><th>Status</th><th>Total</th><th>Created</th></tr>
+            </thead>
+            <tbody>${bookingRows}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -288,6 +406,48 @@ const HostDashboard = () => {
         </div>
 
         <div className="dashboard-sections">
+        <Card title="Income & Withdrawals" className="dashboard-section">
+          <div className="payout-summary">
+            <div>
+              <strong>Available</strong>
+              <div>{formatCurrency(payoutSummary.available, 'PHP')}</div>
+            </div>
+            <div>
+              <strong>Processing</strong>
+              <div>{formatCurrency(payoutSummary.processing, 'PHP')}</div>
+            </div>
+            <div>
+              <strong>Paid Out</strong>
+              <div>{formatCurrency(payoutSummary.paid, 'PHP')}</div>
+            </div>
+          </div>
+          <div className="payout-actions">
+            <Input
+              label="PayPal Sandbox Email"
+              value={paypalEmail}
+              onChange={(e) => setPaypalEmail(e.target.value)}
+              placeholder="paypal@example.com"
+              fullWidth
+            />
+            <div className="payout-buttons">
+              <Button
+                variant="primary"
+                onClick={handleWithdraw}
+                loading={payoutLoading}
+                disabled={payoutLoading || payoutSummary.available <= 0}
+              >
+                Withdraw to PayPal
+              </Button>
+              <Button variant="outline" onClick={handlePrintReport}>
+                Print Report
+              </Button>
+            </div>
+            <p className="text-sm text-slate-500" style={{ marginTop: '0.5rem' }}>
+              Uses PayPal sandbox. If credentials are missing, payout is simulated and
+              earnings are marked as paid for testing.
+            </p>
+          </div>
+        </Card>
           <Card title="Today's Bookings" className="dashboard-section">
             {todayBookings.length === 0 ? (
               <p>No bookings today</p>
