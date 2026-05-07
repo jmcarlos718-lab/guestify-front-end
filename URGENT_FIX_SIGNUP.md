@@ -78,3 +78,5 @@ Just copy the entire file and paste into Firebase Console → Firestore → Rule
 
 
 
+
+
