@@ -8,6 +8,12 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_BASE_URL, getHealthCheckUrl, isProductionApiConfigured } from '../../config/api';
 
+const isLocalFrontend = () =>
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+const isLocalApi = () => API_BASE_URL.includes('localhost') || API_BASE_URL.includes('127.0.0.1');
+
 const BackendStatus = ({ showDetails = false }) => {
   const [status, setStatus] = useState('checking');
   const [error, setError] = useState(null);
@@ -113,8 +119,9 @@ const BackendStatus = ({ showDetails = false }) => {
 
   if (status === 'disconnected') {
     const apiLabel = API_BASE_URL || 'your Railway API URL';
+    const showLocalInstructions = isLocalFrontend() && isLocalApi();
 
-    if (process.env.NODE_ENV === 'production') {
+    if (!showLocalInstructions) {
       return (
         <div style={{ padding: '15px', background: '#fee2e2', color: '#991b1b', borderRadius: '4px', margin: '10px 0', border: '1px solid #fca5a5' }}>
           <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Cannot reach hosted backend</div>
@@ -126,8 +133,8 @@ const BackendStatus = ({ showDetails = false }) => {
             <ol style={{ margin: '8px 0', paddingLeft: '20px' }}>
               <li>Railway backend is deployed and running</li>
               <li><code>/api/health</code> works in the browser</li>
-              <li>Vercel has <code>REACT_APP_API_URL=https://your-app.up.railway.app/api</code></li>
-              <li>Railway has <code>CLIENT_URL=https://your-app.vercel.app</code></li>
+              <li>Frontend uses <code>{apiLabel}</code></li>
+              <li>Railway has <code>CLIENT_URL=https://project-rho-five-45.vercel.app</code></li>
             </ol>
           </div>
         </div>
