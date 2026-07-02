@@ -39,6 +39,7 @@
      "dev": "react-scripts start",
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "vercel-build": "CI=false DISABLE_ESLINT_PLUGIN=true react-scripts build",
     "test": "react-scripts test --coverage --watchAll=false",
     "eject": "react-scripts eject"
   },

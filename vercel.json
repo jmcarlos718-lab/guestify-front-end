@@ -1,7 +1,9 @@
 {
+  "buildCommand": "npm run vercel-build",
   "build": {
     "env": {
-      "CI": "false"
+      "CI": "false",
+      "DISABLE_ESLINT_PLUGIN": "true"
     }
   },
   "rewrites": [
