@@ -8,6 +8,7 @@ import React, { useState } from 'react';
 import Modal from '../common/Modal';
 import PayPalButton from './PayPalButton';
 import Card from '../common/Card';
+import { isPayPalSandbox } from '../../config/paypal';
 import { formatCurrency, calculateNights } from '../../utils/helpers';
 import './PayPalModal.css';
 
@@ -119,10 +120,7 @@ const PayPalModal = ({
             <div className="paypal-header">
               <h4>Pay with PayPal</h4>
               <p>Secure payment powered by PayPal. Complete your booking with a few clicks.</p>
-              {process.env.REACT_APP_PAYPAL_ENV === 'sandbox' || 
-               (process.env.REACT_APP_PAYPAL_CLIENT_ID && 
-                (process.env.REACT_APP_PAYPAL_CLIENT_ID.includes('sandbox') || 
-                 process.env.REACT_APP_PAYPAL_CLIENT_ID.startsWith('sb-'))) ? (
+              {isPayPalSandbox() ? (
                 <div style={{
                   marginTop: '0.75rem',
                   padding: '0.5rem',

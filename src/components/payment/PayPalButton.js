@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { PAYPAL_CLIENT_ID, isPayPalSandbox } from '../../config/paypal';
 import './PaymentMethodSelector.css';
 
 // Note: Global error handling for script errors is handled in src/index.js
@@ -84,20 +85,8 @@ const PayPalButton = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Default to sandbox/test client ID for development
-  // Replace with your own sandbox client ID from https://developer.paypal.com/
-  // Example sandbox client ID format: sb-xxxxxxxxxxxxx or Axxxxxxxxxxxxx
-  const clientId =
-    process.env.REACT_APP_PAYPAL_CLIENT_ID ||
-    'sb'; // Placeholder - will show error if not set, forcing user to configure
-  
-  // Detect if we're in test/sandbox mode
-  // For quick testing, you can temporarily use a public sandbox client ID
-  // But it's better to create your own at https://developer.paypal.com/
-  const isTestMode = !clientId || clientId === 'sb' || 
-                     (typeof clientId === 'string' && clientId.includes('sandbox')) || 
-                     (typeof clientId === 'string' && clientId.startsWith('sb-')) ||
-                     process.env.REACT_APP_PAYPAL_ENV === 'sandbox';
+  const clientId = PAYPAL_CLIENT_ID;
+  const isTestMode = isPayPalSandbox();
 
   useEffect(() => {
     let isMounted = true;
@@ -217,7 +206,7 @@ const PayPalButton = ({
     };
   }, [amount, currency, clientId, disabled, onApprove, onError]);
 
-  if (!clientId || clientId === 'sb') {
+  if (!clientId) {
     return (
       <div className="paypal-placeholder">
         <p><strong>PayPal Sandbox Client ID Required</strong></p>

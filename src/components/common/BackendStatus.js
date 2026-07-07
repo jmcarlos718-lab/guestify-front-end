@@ -76,16 +76,8 @@ const BackendStatus = ({ showDetails = false }) => {
     return () => clearInterval(interval);
   }, []);
 
-  if (!showDetails && status === 'connected') {
+  if (status === 'connected' || status === 'checking') {
     return null;
-  }
-
-  if (status === 'checking') {
-    return (
-      <div style={{ padding: '10px', background: '#fef3c7', color: '#92400e', borderRadius: '4px', margin: '10px 0' }}>
-        Checking backend connection...
-      </div>
-    );
   }
 
   if (status === 'disconnected' && error === 'missing_env') {
@@ -134,7 +126,7 @@ const BackendStatus = ({ showDetails = false }) => {
               <li>Railway backend is deployed and running</li>
               <li><code>/api/health</code> works in the browser</li>
               <li>Frontend uses <code>{apiLabel}</code></li>
-              <li>Railway has <code>CLIENT_URL=https://project-rho-five-45.vercel.app</code></li>
+              <li>Railway has <code>CLIENT_URL=https://guestify-front-end-wfw1.vercel.app</code></li>
             </ol>
           </div>
         </div>
@@ -157,14 +149,6 @@ const BackendStatus = ({ showDetails = false }) => {
             <li>Keep that terminal open and refresh this page</li>
           </ol>
         </div>
-      </div>
-    );
-  }
-
-  if (status === 'connected') {
-    return (
-      <div style={{ padding: '10px', background: '#d1fae5', color: '#065f46', borderRadius: '4px', margin: '10px 0' }}>
-        Backend connected successfully
       </div>
     );
   }
