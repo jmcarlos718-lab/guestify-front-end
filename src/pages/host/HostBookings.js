@@ -16,7 +16,9 @@ import Input from '../../components/common/Input';
 import { ROUTES, BOOKING_STATUS } from '../../config/constants';
 import { getUserBookings, cancelBooking } from '../../services/bookingService';
 import { getListing } from '../../services/listingService';
-import { formatCurrency, formatDate, calculateNights } from '../../utils/helpers';
+import BookingDetailsPanel from '../../components/booking/BookingDetailsPanel';
+import { getBookingListingImage, getBookingListingLocation, getBookingListingTitle } from '../../utils/bookingHelpers';
+import { formatCurrency, formatDate } from '../../utils/helpers';
 import { toast } from 'react-toastify';
 import './HostBookings.css';
 
@@ -29,7 +31,7 @@ const HostBookings = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
-  const [requestRefund, setRequestRefund] = useState(false);
+  const [issueRefund, setIssueRefund] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
@@ -71,7 +73,7 @@ const HostBookings = () => {
     setSelectedBooking(booking);
     setShowCancelModal(true);
     setCancelReason('');
-    setRequestRefund(false);
+    setIssueRefund(false);
   };
 
   const handleCancelBooking = async () => {
@@ -82,16 +84,16 @@ const HostBookings = () => {
 
     setCancelling(true);
     try {
-      await cancelBooking(selectedBooking.id, cancelReason.trim(), null, 'host', requestRefund);
-      if (requestRefund) {
-        toast.success('Booking cancelled successfully. Refund request submitted.');
+      await cancelBooking(selectedBooking.id, cancelReason.trim(), null, 'host', issueRefund);
+      if (issueRefund) {
+        toast.success('Booking cancelled successfully. Refund has been processed.');
       } else {
         toast.success('Booking cancelled successfully');
       }
       setShowCancelModal(false);
       setSelectedBooking(null);
       setCancelReason('');
-      setRequestRefund(false);
+      setIssueRefund(false);
       await loadBookings();
     } catch (error) {
       toast.error(error.message || 'Failed to cancel booking');
@@ -186,14 +188,14 @@ const HostBookings = () => {
             {filteredBookings.map((booking) => (
               <Card key={booking.id} className="booking-card">
                 <div className="booking-content">
-                  {booking.listing && booking.listing.images && booking.listing.images.length > 0 && (
+                  {getBookingListingImage(booking) && (
                     <div className="booking-image">
-                      <img src={booking.listing.images[0]} alt={booking.listing.title} />
+                      <img src={getBookingListingImage(booking)} alt={getBookingListingTitle(booking)} />
                     </div>
                   )}
                   <div className="booking-details">
                     <div className="booking-header">
-                      <h3>{booking.listing?.title || 'Listing'}</h3>
+                      <h3>{getBookingListingTitle(booking)}</h3>
                       <span
                         className="booking-status"
                         style={{ backgroundColor: getStatusColor(booking.status) + '20', color: getStatusColor(booking.status) }}
@@ -201,50 +203,8 @@ const HostBookings = () => {
                         {booking.status}
                       </span>
                     </div>
-                    <p className="booking-location">
-                      {booking.listing?.location?.city}, {booking.listing?.location?.country}
-                    </p>
-                    <div className="booking-info-grid">
-                      <div>
-                        <strong>Check-in:</strong> {formatDate(booking.checkIn)}
-                      </div>
-                      <div>
-                        <strong>Check-out:</strong> {formatDate(booking.checkOut)}
-                      </div>
-                      <div>
-                        <strong>Guests:</strong> {booking.guests}
-                      </div>
-                      <div>
-                        <strong>Nights:</strong> {calculateNights(booking.checkIn, booking.checkOut)}
-                      </div>
-                      {booking.pricing && (
-                        <div>
-                          <strong>Total:</strong> {formatCurrency(booking.pricing.total || 0, booking.pricing.currency)}
-                        </div>
-                      )}
-                      {booking.guestInformation && booking.guestInformation.length > 0 && (
-                        <div className="guest-info-full">
-                          <strong>Primary Guest:</strong>
-                          <div className="guest-details-inline">
-                            <span>{booking.guestInformation[0].fullName || 'N/A'}</span>
-                            {booking.guestInformation[0].age && (
-                              <span> • Age: {booking.guestInformation[0].age}</span>
-                            )}
-                            {booking.guestInformation[0].phone && (
-                              <span> • Phone: {booking.guestInformation[0].phone}</span>
-                            )}
-                            {booking.guestInformation[0].email && (
-                              <span> • Email: {booking.guestInformation[0].email}</span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      {booking.cancellationReason && (
-                        <div>
-                          <strong>Cancellation Reason:</strong> {booking.cancellationReason}
-                        </div>
-                      )}
-                    </div>
+                    <p className="booking-location">{getBookingListingLocation(booking)}</p>
+                    <BookingDetailsPanel booking={booking} />
                   </div>
                 </div>
                 <div className="booking-actions">
@@ -324,15 +284,15 @@ const HostBookings = () => {
                   <label className="form-checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
                     <input
                       type="checkbox"
-                      checked={requestRefund}
-                      onChange={(e) => setRequestRefund(e.target.checked)}
+                      checked={issueRefund}
+                      onChange={(e) => setIssueRefund(e.target.checked)}
                       style={{ cursor: 'pointer' }}
                     />
-                    <span>Request refund for this cancellation</span>
+                    <span>Refund guest for this cancellation</span>
                   </label>
-                  {requestRefund && (
+                  {issueRefund && (
                     <p style={{ fontSize: '0.875rem', color: '#6B7280', marginTop: '0.5rem' }}>
-                      A refund request will be created based on the listing's cancellation policy (50% for strict, 70% for moderate).
+                      The guest will be refunded based on the listing's cancellation policy (50% for strict, 70% for moderate).
                     </p>
                   )}
                 </div>
@@ -343,7 +303,7 @@ const HostBookings = () => {
                       setShowCancelModal(false);
                       setSelectedBooking(null);
                       setCancelReason('');
-                      setRequestRefund(false);
+                      setIssueRefund(false);
                     }}
                     disabled={cancelling}
                   >

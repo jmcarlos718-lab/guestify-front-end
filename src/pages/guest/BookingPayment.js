@@ -13,10 +13,11 @@ import Card from '../../components/common/Card';
 import PayPalButton from '../../components/payment/PayPalButton';
 import GuestInformationForm from '../../components/booking/GuestInformationForm';
 import { ROUTES, BOOKING_STATUS, PAYMENT_STATUS } from '../../config/constants';
-import { createBooking } from '../../services/bookingService';
+import { createBooking, updateBooking } from '../../services/bookingService';
 import { createPaymentDocument } from '../../models/paymentModel';
 import * as firestoreService from '../../services/firestoreService';
 import { calculateListingPrice } from '../../models/listingModel';
+import { buildCompleteBookingData } from '../../utils/bookingHelpers';
 import { formatCurrency, calculateNights } from '../../utils/helpers';
 import { toast } from 'react-toastify';
 import './BookingPayment.css';
@@ -24,7 +25,7 @@ import './BookingPayment.css';
 const BookingPayment = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuthContext();
+  const { user, userProfile } = useAuthContext();
   const [processing, setProcessing] = useState(false);
   const [bookingData, setBookingData] = useState(null);
   const [pricing, setPricing] = useState(null);
@@ -75,40 +76,40 @@ const BookingPayment = () => {
     setProcessing(true);
 
     try {
-      // Create booking
-      const bookingDoc = {
-        listingId: bookingData.listingId,
-        hostId: bookingData.listing.hostId,
-        guestId: user.uid,
-        checkIn: new Date(bookingData.checkIn),
-        checkOut: new Date(bookingData.checkOut),
+      const transactionId =
+        details.id || details.purchase_units?.[0]?.payments?.captures?.[0]?.id || null;
+
+      const bookingDoc = buildCompleteBookingData({
+        listing: bookingData.listing,
+        user,
+        userProfile,
+        checkIn: bookingData.checkIn,
+        checkOut: bookingData.checkOut,
         guests: bookingData.guests,
-        guestInformation: guestInformation, // Include guest information
-        pricing: {
-          ...pricing,
-          currency: bookingData.listing.pricing?.currency || 'PHP'
-        },
-        status: BOOKING_STATUS.CONFIRMED,
-        paymentStatus: PAYMENT_STATUS.COMPLETED
-      };
+        guestInformation,
+        pricing,
+        payment: {
+          paymentMethod: 'paypal',
+          transactionId,
+          paymentStatus: PAYMENT_STATUS.COMPLETED,
+          status: BOOKING_STATUS.CONFIRMED
+        }
+      });
 
       const bookingId = await createBooking(bookingDoc);
 
-      // Calculate payment distribution (15% admin, 85% host)
-      // Total amount is price * number of guests
-      const totalAmount = pricing.total;
+      const totalAmount = bookingDoc.pricing.total;
       const adminIncome = totalAmount * 0.15;
       const hostIncome = totalAmount * 0.85;
 
-      // Create payment record with distribution
       const paymentDoc = createPaymentDocument({
         bookingId,
         userId: user.uid,
         hostId: bookingData.listing.hostId,
         amount: totalAmount,
-        currency: bookingData.listing.pricing?.currency || 'PHP',
+        currency: bookingDoc.pricing.currency,
         paymentMethod: 'paypal',
-        transactionId: details.id || details.purchase_units?.[0]?.payments?.captures?.[0]?.id || null,
+        transactionId,
         adminIncome,
         hostIncome,
         payoutStatus: 'pending',
@@ -116,9 +117,9 @@ const BookingPayment = () => {
         adminPayoutStatus: 'pending',
         status: PAYMENT_STATUS.COMPLETED
       });
-      
-      // Save payment record to Firestore
-      await firestoreService.createDocument('payments', paymentDoc);
+
+      const paymentId = await firestoreService.createDocument('payments', paymentDoc);
+      await updateBooking(bookingId, { paymentId });
 
       toast.success('Payment successful! Booking confirmed.');
       navigate(`${ROUTES.GUEST_BOOKINGS}?booking=${bookingId}`);

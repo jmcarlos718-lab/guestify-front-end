@@ -140,6 +140,38 @@
   margin: 0;
 }
 
+.booking-details-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.booking-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #E5E7EB;
+}
+
+.booking-detail-row {
+  color: #374151;
+  font-size: 0.9375rem;
+}
+
+.booking-detail-total {
+  font-size: 1rem;
+  color: #111827;
+}
+
+.booking-guest-card {
+  padding: 0.75rem;
+  background: #F9FAFB;
+  border-radius: 0.5rem;
+  margin-top: 0.35rem;
+}
+
 .booking-dates {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));

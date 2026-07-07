@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -19,19 +19,21 @@ import { ROUTES, BOOKING_STATUS, PAYMENT_STATUS } from '../../config/constants';
 import { getListing } from '../../services/listingService';
 import { getListingReviews, calculateAverageRating } from '../../services/reviewService';
 import { getListingBookings, checkDateAvailability, subscribeToListingBookings } from '../../services/bookingService';
-import { createBooking } from '../../services/bookingService';
+import { createBooking, updateBooking } from '../../services/bookingService';
 import { createPaymentDocument } from '../../models/paymentModel';
+import { buildCompleteBookingData } from '../../utils/bookingHelpers';
 import { calculateListingPrice } from '../../models/listingModel';
 import * as firestoreService from '../../services/firestoreService';
 import { useAuthContext } from '../../context/AuthContext';
-import { formatCurrency, formatDate, calculateNights } from '../../utils/helpers';
+import { formatCurrency, formatDate, calculateNights, toLocalDateString } from '../../utils/helpers';
 import { toast } from 'react-toastify';
 import './ListingDetail.css';
 
 const ListingDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  const location = useLocation();
+  const { user, userProfile } = useAuthContext();
   const [listing, setListing] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +51,19 @@ const ListingDetail = () => {
   const [showPayPalModal, setShowPayPalModal] = useState(false);
   const [pricing, setPricing] = useState(null);
   const [guestInformation, setGuestInformation] = useState([]);
+
+  // Restore dates after returning from sign-up / login
+  useEffect(() => {
+    const saved = location.state?.bookingDates;
+    if (saved?.checkIn || saved?.checkOut) {
+      setBookingDates((prev) => ({
+        ...prev,
+        checkIn: saved.checkIn || prev.checkIn,
+        checkOut: saved.checkOut || prev.checkOut,
+        guests: saved.guests || prev.guests
+      }));
+    }
+  }, [location.state?.bookingDates]);
 
   useEffect(() => {
     loadListing();
@@ -68,8 +83,8 @@ const ListingDetail = () => {
           const checkIn = booking.checkIn?.toDate ? booking.checkIn.toDate() : new Date(booking.checkIn);
           const checkOut = booking.checkOut?.toDate ? booking.checkOut.toDate() : new Date(booking.checkOut);
           return {
-            checkIn: checkIn.toISOString().split('T')[0],
-            checkOut: checkOut.toISOString().split('T')[0],
+            checkIn: toLocalDateString(checkIn),
+            checkOut: toLocalDateString(checkOut),
             checkInDate: checkIn,
             checkOutDate: checkOut
           };
@@ -117,8 +132,8 @@ const ListingDetail = () => {
         const checkIn = booking.checkIn?.toDate ? booking.checkIn.toDate() : new Date(booking.checkIn);
         const checkOut = booking.checkOut?.toDate ? booking.checkOut.toDate() : new Date(booking.checkOut);
         return {
-          checkIn: checkIn.toISOString().split('T')[0],
-          checkOut: checkOut.toISOString().split('T')[0],
+          checkIn: toLocalDateString(checkIn),
+          checkOut: toLocalDateString(checkOut),
           checkInDate: checkIn,
           checkOutDate: checkOut
         };
@@ -150,20 +165,47 @@ const ListingDetail = () => {
   const isDateDisabled = (date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    // Disable past dates
-    if (date < today) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+
+    if (d < today) {
       return true;
     }
-    
-    // Disable booked dates
-    const dateString = date.toISOString().split('T')[0];
-    return isDateBooked(dateString);
+
+    // When selecting check-out, disable dates on or before check-in
+    if (calendarMode === 'checkOut' && bookingDates.checkIn) {
+      const checkIn = new Date(bookingDates.checkIn);
+      checkIn.setHours(0, 0, 0, 0);
+      if (d <= checkIn) {
+        return true;
+      }
+    }
+
+    return isDateBooked(toLocalDateString(d));
+  };
+
+  const getDateRangeLabel = () => {
+    if (bookingDates.checkIn && bookingDates.checkOut) {
+      const nights = calculateNights(bookingDates.checkIn, bookingDates.checkOut);
+      return `${formatDate(bookingDates.checkIn)} → ${formatDate(bookingDates.checkOut)} (${nights} night${nights !== 1 ? 's' : ''})`;
+    }
+    if (bookingDates.checkIn) {
+      return `${formatDate(bookingDates.checkIn)} — select check-out`;
+    }
+    return '';
+  };
+
+  const getEstimatedTotal = () => {
+    if (!listing || !bookingDates.checkIn || !bookingDates.checkOut) return null;
+    const nights = calculateNights(bookingDates.checkIn, bookingDates.checkOut);
+    const guests = parseInt(bookingDates.guests) || 1;
+    const rate = listing.pricing?.baseRate || 0;
+    return formatCurrency(rate * nights * guests, listing.pricing?.currency);
   };
 
   // Handle calendar date change
   const handleCalendarChange = (date) => {
-    const dateString = date.toISOString().split('T')[0];
+    const dateString = toLocalDateString(date);
     
     if (calendarMode === 'checkIn') {
       handleDateChange('checkIn', dateString);
@@ -222,7 +264,7 @@ const ListingDetail = () => {
     const datesInRange = [];
     const currentDate = new Date(checkInDate);
     while (currentDate < checkOutDate) {
-      datesInRange.push(new Date(currentDate).toISOString().split('T')[0]);
+      datesInRange.push(toLocalDateString(currentDate));
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
@@ -253,6 +295,17 @@ const ListingDetail = () => {
   const handleBooking = async () => {
     if (!bookingDates.checkIn || !bookingDates.checkOut) {
       toast.error('Please select check-in and check-out dates');
+      return;
+    }
+
+    if (!user) {
+      toast.info('Create an account to reserve this listing');
+      navigate(ROUTES.REGISTER, {
+        state: {
+          from: { pathname: `/listing/${id}` },
+          bookingDates
+        }
+      });
       return;
     }
 
@@ -317,40 +370,40 @@ const ListingDetail = () => {
     }
 
     try {
-      // Create booking
-      const bookingDoc = {
-        listingId: listing.id,
-        hostId: listing.hostId,
-        guestId: user.uid,
-        checkIn: new Date(bookingDates.checkIn),
-        checkOut: new Date(bookingDates.checkOut),
+      const transactionId =
+        details.id || details.purchase_units?.[0]?.payments?.captures?.[0]?.id || null;
+
+      const bookingDoc = buildCompleteBookingData({
+        listing,
+        user,
+        userProfile,
+        checkIn: bookingDates.checkIn,
+        checkOut: bookingDates.checkOut,
         guests: bookingDates.guests,
-        guestInformation: guestInformation, // Include guest information
-        pricing: {
-          ...pricing,
-          currency: listing.pricing?.currency || 'PHP'
-        },
-        status: BOOKING_STATUS.CONFIRMED,
-        paymentStatus: PAYMENT_STATUS.COMPLETED
-      };
+        guestInformation,
+        pricing,
+        payment: {
+          paymentMethod: 'paypal',
+          transactionId,
+          paymentStatus: PAYMENT_STATUS.COMPLETED,
+          status: BOOKING_STATUS.CONFIRMED
+        }
+      });
 
       const bookingId = await createBooking(bookingDoc);
 
-      // Calculate payment distribution (15% admin, 85% host)
-      // Total amount is price * number of guests
-      const totalAmount = pricing.total;
+      const totalAmount = bookingDoc.pricing.total;
       const adminIncome = totalAmount * 0.15;
       const hostIncome = totalAmount * 0.85;
 
-      // Create payment record with distribution
       const paymentDoc = createPaymentDocument({
         bookingId,
         userId: user.uid,
         hostId: listing.hostId,
         amount: totalAmount,
-        currency: listing.pricing?.currency || 'PHP',
+        currency: bookingDoc.pricing.currency,
         paymentMethod: 'paypal',
-        transactionId: details.id || details.purchase_units?.[0]?.payments?.captures?.[0]?.id || null,
+        transactionId,
         adminIncome,
         hostIncome,
         payoutStatus: 'pending',
@@ -358,9 +411,9 @@ const ListingDetail = () => {
         adminPayoutStatus: 'pending',
         status: PAYMENT_STATUS.COMPLETED
       });
-      
-      // Save payment record to Firestore
-      await firestoreService.createDocument('payments', paymentDoc);
+
+      const paymentId = await firestoreService.createDocument('payments', paymentDoc);
+      await updateBooking(bookingId, { paymentId });
 
       toast.success('Payment successful! Booking confirmed.');
       setShowPayPalModal(false);
@@ -670,85 +723,64 @@ const ListingDetail = () => {
 
               <div className="booking-form">
                 <div className="form-group">
-                  <label>Check-in</label>
+                  <label>Dates</label>
                   <div className="date-input-wrapper">
                     <input
                       type="text"
-                      value={bookingDates.checkIn ? formatDate(bookingDates.checkIn) : ''}
-                      placeholder="Select check-in date"
+                      value={getDateRangeLabel()}
+                      placeholder="Add check-in and check-out dates"
                       readOnly
                       onClick={() => {
-                        setCalendarMode('checkIn');
+                        setCalendarMode(bookingDates.checkIn && !bookingDates.checkOut ? 'checkOut' : 'checkIn');
                         setShowCalendar(true);
                       }}
-                      className="form-input date-input"
-                      style={isDateBooked(bookingDates.checkIn) ? { borderColor: '#ff4444' } : {}}
+                      className="form-input date-input date-range-input"
                     />
                     <button
                       type="button"
                       className="calendar-toggle-btn"
                       onClick={() => {
-                        setCalendarMode('checkIn');
+                        setCalendarMode(bookingDates.checkIn && !bookingDates.checkOut ? 'checkOut' : 'checkIn');
                         setShowCalendar(!showCalendar);
                       }}
+                      aria-label="Open calendar"
                     >
                       📅
                     </button>
                   </div>
-                  {isDateBooked(bookingDates.checkIn) && (
-                    <small style={{ color: '#ff4444', display: 'block', marginTop: '4px' }}>
-                      This date is not available
-                    </small>
-                  )}
-                </div>
-                <div className="form-group">
-                  <label>Check-out</label>
-                  <div className="date-input-wrapper">
-                    <input
-                      type="text"
-                      value={bookingDates.checkOut ? formatDate(bookingDates.checkOut) : ''}
-                      placeholder="Select check-out date"
-                      readOnly
-                      onClick={() => {
-                        if (bookingDates.checkIn) {
-                          setCalendarMode('checkOut');
-                          setShowCalendar(true);
-                        } else {
-                          toast.info('Please select check-in date first');
-                        }
-                      }}
-                      className="form-input date-input"
-                      style={isDateBooked(bookingDates.checkOut) ? { borderColor: '#ff4444' } : {}}
-                    />
-                    <button
-                      type="button"
-                      className="calendar-toggle-btn"
-                      onClick={() => {
-                        if (bookingDates.checkIn) {
-                          setCalendarMode('checkOut');
-                          setShowCalendar(!showCalendar);
-                        } else {
-                          toast.info('Please select check-in date first');
-                        }
-                      }}
-                    >
-                      📅
-                    </button>
-                  </div>
-                  {isDateBooked(bookingDates.checkOut) && (
-                    <small style={{ color: '#ff4444', display: 'block', marginTop: '4px' }}>
-                      This date is not available
+                  {getEstimatedTotal() && (
+                    <small className="booking-estimate">
+                      Estimated total: {getEstimatedTotal()}
                     </small>
                   )}
                 </div>
                 {showCalendar && (
                   <div className="calendar-container">
+                    <p className="calendar-hint">
+                      {calendarMode === 'checkIn'
+                        ? 'Step 1: Select your check-in date'
+                        : 'Step 2: Select your check-out date'}
+                    </p>
                     <Calendar
                       onChange={handleCalendarChange}
-                      value={calendarMode === 'checkIn' && bookingDates.checkIn ? new Date(bookingDates.checkIn) : 
-                             calendarMode === 'checkOut' && bookingDates.checkOut ? new Date(bookingDates.checkOut) : 
-                             new Date()}
-                      minDate={calendarMode === 'checkOut' && bookingDates.checkIn ? new Date(bookingDates.checkIn) : new Date()}
+                      value={
+                        calendarMode === 'checkIn' && bookingDates.checkIn
+                          ? new Date(bookingDates.checkIn + 'T12:00:00')
+                          : calendarMode === 'checkOut' && bookingDates.checkOut
+                            ? new Date(bookingDates.checkOut + 'T12:00:00')
+                            : bookingDates.checkIn
+                              ? new Date(bookingDates.checkIn + 'T12:00:00')
+                              : new Date()
+                      }
+                      minDate={
+                        calendarMode === 'checkOut' && bookingDates.checkIn
+                          ? (() => {
+                              const d = new Date(bookingDates.checkIn + 'T12:00:00');
+                              d.setDate(d.getDate() + 1);
+                              return d;
+                            })()
+                          : new Date()
+                      }
                       tileDisabled={({ date }) => isDateDisabled(date)}
                       className="booking-calendar"
                     />
@@ -828,9 +860,9 @@ const ListingDetail = () => {
                     size="lg"
                     fullWidth
                     onClick={handleBooking}
-                    disabled={!bookingDates.checkIn || !bookingDates.checkOut || !!dateError || !user || !bookingDates.guests || bookingDates.guests < 1}
+                    disabled={!bookingDates.checkIn || !bookingDates.checkOut || !!dateError || !bookingDates.guests || bookingDates.guests < 1}
                   >
-                    Reserve
+                    {user ? 'Reserve' : 'Sign up to Reserve'}
                   </Button>
                 )}
               </div>

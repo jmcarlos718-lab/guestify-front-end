@@ -19,11 +19,16 @@ export const createBookingDocument = (bookingData) => {
     checkIn,
     checkOut,
     guests,
-    guestInformation = [], // Array of guest information objects
+    guestInformation = [],
+    guestContact = {},
+    listingSnapshot = {},
     pricing = {},
     specialRequests = '',
     status = BOOKING_STATUS.PENDING,
     paymentStatus = PAYMENT_STATUS.PENDING,
+    paymentMethod = null,
+    transactionId = null,
+    paymentId = null,
     createdAt = new Date(),
     updatedAt = new Date()
   } = bookingData;
@@ -36,6 +41,18 @@ export const createBookingDocument = (bookingData) => {
     checkOut: checkOut instanceof Date ? checkOut : new Date(checkOut),
     guests,
     guestInformation: Array.isArray(guestInformation) ? guestInformation : [],
+    guestContact: {
+      fullName: guestContact.fullName || '',
+      email: guestContact.email || '',
+      phone: guestContact.phone || ''
+    },
+    listingSnapshot: {
+      title: listingSnapshot.title || '',
+      image: listingSnapshot.image || null,
+      city: listingSnapshot.city || '',
+      country: listingSnapshot.country || '',
+      address: listingSnapshot.address || ''
+    },
     pricing: {
       baseRate: pricing.baseRate || 0,
       nights: pricing.nights || 0,
@@ -50,8 +67,9 @@ export const createBookingDocument = (bookingData) => {
     specialRequests,
     status,
     paymentStatus,
-    paymentMethod: null,
-    paymentId: null,
+    paymentMethod,
+    transactionId,
+    paymentId,
     cancellationReason: null,
     cancelledAt: null,
     cancelledBy: null,

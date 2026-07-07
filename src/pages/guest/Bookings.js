@@ -18,7 +18,9 @@ import { requestRefund } from '../../services/refundService';
 import { getPaymentByBookingId } from '../../services/paymentService';
 import Modal from '../../components/common/Modal';
 import Input from '../../components/common/Input';
-import { formatCurrency, formatDate, calculateNights } from '../../utils/helpers';
+import BookingDetailsPanel from '../../components/booking/BookingDetailsPanel';
+import { getBookingListingImage, getBookingListingLocation, getBookingListingTitle } from '../../utils/bookingHelpers';
+import { formatCurrency, formatDate } from '../../utils/helpers';
 import { toast } from 'react-toastify';
 import './Bookings.css';
 
@@ -246,14 +248,14 @@ const Bookings = () => {
             {filteredBookings.map((booking) => (
               <Card key={booking.id} className="booking-card">
                 <div className="booking-content">
-                  {booking.listing && booking.listing.images && booking.listing.images.length > 0 && (
+                  {getBookingListingImage(booking) && (
                     <div className="booking-image">
-                      <img src={booking.listing.images[0]} alt={booking.listing.title} />
+                      <img src={getBookingListingImage(booking)} alt={getBookingListingTitle(booking)} />
                     </div>
                   )}
                   <div className="booking-details">
                     <div className="booking-header">
-                      <h3>{booking.listing?.title || 'Listing'}</h3>
+                      <h3>{getBookingListingTitle(booking)}</h3>
                       <span
                         className="booking-status"
                         style={{ backgroundColor: getStatusColor(booking.status) + '20', color: getStatusColor(booking.status) }}
@@ -261,27 +263,8 @@ const Bookings = () => {
                         {booking.status}
                       </span>
                     </div>
-                    <p className="booking-location">
-                      {booking.listing?.location?.city}, {booking.listing?.location?.country}
-                    </p>
-                    <div className="booking-dates">
-                      <div>
-                        <strong>Check-in:</strong> {formatDate(booking.checkIn)}
-                      </div>
-                      <div>
-                        <strong>Check-out:</strong> {formatDate(booking.checkOut)}
-                      </div>
-                      <div>
-                        <strong>Guests:</strong> {booking.guests}
-                      </div>
-                      <div>
-                        <strong>Nights:</strong> {calculateNights(booking.checkIn, booking.checkOut)}
-                      </div>
-                    </div>
-                    <div className="booking-price">
-                      <strong>Total:</strong>{' '}
-                      {formatCurrency(booking.pricing?.total || 0, booking.pricing?.currency)}
-                    </div>
+                    <p className="booking-location">{getBookingListingLocation(booking)}</p>
+                    <BookingDetailsPanel booking={booking} />
                     {booking.status === BOOKING_STATUS.CANCELLED && booking.refundRequested && (
                       <div className="refund-status">
                         <strong>Refund Status:</strong>{' '}
@@ -439,6 +422,7 @@ const Bookings = () => {
                   <ul>
                     <li>Refund amount is 80% of the original payment</li>
                     <li>20% is retained as a cancellation fee</li>
+                    <li>When a guest requests a refund, a platform service fee of less than 5% of the booking total may be retained</li>
                     <li>Refund request will be reviewed by the host</li>
                     <li>Host can approve or reject the refund request</li>
                     <li>If approved, refund will be processed within 5-7 business days</li>
