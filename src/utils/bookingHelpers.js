@@ -1,4 +1,4 @@
-import { calculateNights } from './helpers';
+import { calculateNights, parseDateValue, toLocalDateString } from './helpers';
 
 export const buildCompleteBookingData = ({
   listing,
@@ -13,14 +13,16 @@ export const buildCompleteBookingData = ({
   specialRequests = ''
 }) => {
   const primaryGuest = guestInformation[0] || {};
-  const nights = pricing.nights ?? calculateNights(checkIn, checkOut);
+  const normalizedCheckIn = parseDateValue(checkIn);
+  const normalizedCheckOut = parseDateValue(checkOut);
+  const nights = pricing.nights ?? calculateNights(normalizedCheckIn || checkIn, normalizedCheckOut || checkOut);
 
   return {
     listingId: listing.id,
     hostId: listing.hostId,
     guestId: user.uid,
-    checkIn: new Date(checkIn),
-    checkOut: new Date(checkOut),
+    checkIn: normalizedCheckIn ? toLocalDateString(normalizedCheckIn) : toLocalDateString(checkIn),
+    checkOut: normalizedCheckOut ? toLocalDateString(normalizedCheckOut) : toLocalDateString(checkOut),
     guests: Number(guests) || 1,
     guestInformation,
     guestContact: {
