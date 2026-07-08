@@ -7,7 +7,8 @@
 import * as firestoreService from './firestoreService';
 import { createBookingDocument, validateBooking, canCancelBooking } from '../models/bookingModel';
 import { BOOKING_STATUS, PAYMENT_STATUS } from '../config/constants';
-import { processFlexibleRefund, requestRefund } from './refundService';
+import { processFlexibleRefund, processHostRefund } from './refundService';
+import apiClient from './apiClient';
 
 const COLLECTION_NAME = 'bookings';
 
@@ -24,6 +25,14 @@ export const createBooking = async (bookingData) => {
 
   const bookingDoc = createBookingDocument(bookingData);
   const bookingId = await firestoreService.createDocument(COLLECTION_NAME, bookingDoc);
+
+  // Send booking confirmation email
+  try {
+    await sendBookingConfirmationEmail(bookingId, bookingDoc);
+  } catch (error) {
+    console.error('Failed to send confirmation email on booking creation:', error);
+  }
+
   return bookingId;
 };
 
@@ -168,7 +177,7 @@ export const updateBooking = async (bookingId, updates) => {
  * @param {string} cancelledBy - 'guest' or 'host' (default: 'guest')
  * @returns {Promise<void>}
  */
-export const cancelBooking = async (bookingId, reason, cancellationPolicy = null, cancelledBy = 'guest', requestRefundForHost = false) => {
+export const cancelBooking = async (bookingId, reason, cancellationPolicy = null, cancelledBy = 'guest', issueRefundForHost = false) => {
   const booking = await getBooking(bookingId);
 
   if (!booking) {
@@ -211,12 +220,12 @@ export const cancelBooking = async (bookingId, reason, cancellationPolicy = null
       console.error('Error processing flexible refund:', error);
       // Don't throw - booking is already cancelled
     }
-  } else if (cancelledBy === 'host' && requestRefundForHost) {
-    // Host cancelling and requesting refund (for strict/moderate policies)
+  } else if (cancelledBy === 'host' && issueRefundForHost) {
+    // Host cancelling and issuing refund directly (for strict/moderate policies)
     try {
-      await requestRefund(bookingId, reason, 'host');
+      await processHostRefund(bookingId, reason);
     } catch (error) {
-      console.error('Error requesting refund for host:', error);
+      console.error('Error processing host refund:', error);
       // Don't throw - booking is already cancelled
     }
   }
@@ -286,6 +295,24 @@ export const subscribeToListingBookings = (listingId, callback, excludeStatuses 
       callback(bookings, null);
     }
   );
+};
+
+/**
+ * Send booking confirmation email via backend
+ * @param {string} bookingId - Booking ID
+ * @param {Object} bookingDoc - Booking document data
+ */
+export const sendBookingConfirmationEmail = async (bookingId, bookingDoc) => {
+  try {
+    const response = await apiClient.post('/bookings/email-confirmation', {
+      bookingId,
+      bookingDoc
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error in sendBookingConfirmationEmail service:', error);
+    throw error;
+  }
 };
 
 export { canCancelBooking };
