@@ -5,6 +5,7 @@
 import {
   formatCurrency,
   formatDate,
+  formatDateTime,
   calculateNights,
   validateEmail,
   validatePhone,
@@ -36,6 +37,23 @@ describe('Helper Functions', () => {
     test('handles null/undefined', () => {
       expect(formatDate(null)).toBe('');
       expect(formatDate(undefined)).toBe('');
+    });
+  });
+
+  describe('formatDateTime', () => {
+    test('formats date and time correctly', () => {
+      const date = new Date('2024-01-15T14:30:00');
+      const formatted = formatDateTime(date);
+      expect(formatted).toBeTruthy();
+      expect(typeof formatted).toBe('string');
+      expect(formatted).toContain('Jan 15, 2024');
+      expect(formatted).toContain('2:30');
+      expect(formatted).toContain('PM');
+    });
+
+    test('handles null/undefined', () => {
+      expect(formatDateTime(null)).toBe('');
+      expect(formatDateTime(undefined)).toBe('');
     });
   });
 

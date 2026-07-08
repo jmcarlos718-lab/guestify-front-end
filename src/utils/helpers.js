@@ -88,6 +88,23 @@ export const formatDate = (date, format = 'MMM dd, yyyy') => {
 };
 
 /**
+ * Format date and time
+ */
+export const formatDateTime = (date) => {
+  if (!date) return '';
+  const d = parseDateValue(date);
+  if (!d) return 'Invalid date';
+  return d.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
+/**
  * Calculate number of nights between two dates
  */
 export const calculateNights = (checkIn, checkOut) => {

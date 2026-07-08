@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency, formatDate, calculateNights } from '../../utils/helpers';
+import { formatCurrency, formatDate, formatDateTime, calculateNights } from '../../utils/helpers';
 import { PAYMENT_STATUS } from '../../config/constants';
 
 const BookingDetailsPanel = ({ booking, showBookingId = true }) => {
@@ -13,6 +13,12 @@ const BookingDetailsPanel = ({ booking, showBookingId = true }) => {
       {showBookingId && booking.id && (
         <div className="booking-detail-row">
           <strong>Booking ID:</strong> <span>{booking.id}</span>
+        </div>
+      )}
+
+      {booking.createdAt && (
+        <div className="booking-detail-row">
+          <strong>Booked On:</strong> <span>{formatDateTime(booking.createdAt)}</span>
         </div>
       )}
 
@@ -63,8 +69,16 @@ const BookingDetailsPanel = ({ booking, showBookingId = true }) => {
         <div className="booking-detail-section">
           <strong>Price Breakdown</strong>
           <div className="booking-detail-row">
-            Rate: {formatCurrency(booking.pricing.baseRate || 0, booking.pricing.currency)} x {booking.guests} guest(s)
+            Rate: {formatCurrency(booking.pricing.baseRate || 0, booking.pricing.currency)} x {nights} night(s) x {booking.guests} guest(s)
           </div>
+          <div className="booking-detail-row">
+            Subtotal: {formatCurrency(booking.pricing.subtotal || 0, booking.pricing.currency)}
+          </div>
+          {booking.pricing.discountAmount > 0 && (
+            <div className="booking-detail-row">
+              Discount: -{formatCurrency(booking.pricing.discountAmount, booking.pricing.currency)}
+            </div>
+          )}
           {booking.pricing.cleaningFee > 0 && (
             <div className="booking-detail-row">
               Cleaning fee: {formatCurrency(booking.pricing.cleaningFee, booking.pricing.currency)}
